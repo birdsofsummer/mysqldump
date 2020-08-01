@@ -62,6 +62,23 @@ func write_table(file_name string,d TableInfos){
 	fmt.Println("[saved]:",file_name)
 }
 
+func write_map(file_name string ,d []map[string]interface{}) {
+	//fmt.Println("save",file_name)
+	b, _ := json.MarshalIndent(d, "", "\t")
+	file,_:=os.Create(file_name)
+	defer file.Close()
+	_, err := file.Write(b)
+	if err!=nil{
+		fmt.Println("[saved] error")
+	}
+	fmt.Println("[saved]:",file_name)
+}
+
+
+
+
+
+
 //"SELECT `table_name`,`table_comment` FROM `information_schema`.`tables` WHERE `table_schema`=?"
 //       MariaDB [test]> SELECT `table_name`,`table_comment` FROM `information_schema`.`tables` WHERE `table_schema`="test";
 //       +------------+---------------+
@@ -113,6 +130,7 @@ func show_table(Db *sqlx.DB,db string,table string)(TableInfos ,error){
 }
 
 func show_db(Db *sqlx.DB) (error){
+
 	query1:=func (s string) (error,[]string){
 		rows, err := Db.Query(s)
 		defer rows.Close()
@@ -126,6 +144,56 @@ func show_db(Db *sqlx.DB) (error){
 			d=append(d,d1)
 		}
 		return err,d
+	}
+
+
+	queryn:=func (s string) (error,[]map[string]interface{}){
+
+		var d []map[string]interface{}
+
+		stmt, err := Db.Prepare(s) 
+		if err != nil {
+			fmt.Println("eee",err)
+			return err,d
+		}
+		defer stmt.Close()
+		rows, err := stmt.Query()
+		if err != nil {
+			fmt.Println("eee",err)
+			return err,d
+		}
+
+
+		columns, err := rows.Columns()
+		l:=len(columns)
+
+		for _, name := range columns {
+			//m[name]
+			fmt.Println(name)
+		}
+
+		scanArgs:=make([]interface{}, l)
+		values := make([][]byte, l)
+
+
+		for i := range values {
+			scanArgs[i] = &values[i]
+		}
+
+		for rows.Next() {
+			rows.Scan(scanArgs...)
+			m:=make(map[string]interface{})
+			for k, v := range values {
+				k1:=columns[k]
+				v1:= string(v)
+				m[k1]=v1
+				//fmt.Println(m)
+			}
+			d=append(d,m)
+		}
+
+		//fmt.Println("ddd",d)
+		return nil,d
 	}
 
 	s0:=`select distinct table_schema from information_schema.tables where table_type="BASE TABLE";`
@@ -159,6 +227,12 @@ func show_db(Db *sqlx.DB) (error){
 			
 			//fmt.Println(db,table,tableInfos)
 			fmt.Println(db,table,file_name)
+
+			ss:=fmt.Sprintf("select * from %s",table)
+
+			file_name1:=fmt.Sprintf(`%s/%s-data.json`,file_path,table)
+			_,d:=queryn(ss)
+			write_map(file_name1,d)
 		}
 	}
 
