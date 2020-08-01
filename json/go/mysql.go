@@ -4,6 +4,9 @@ import (
     "fmt"
     _ "github.com/go-sql-driver/mysql"
     "github.com/jmoiron/sqlx"
+	"encoding/json"
+	"time"
+	"os"
 )
 
 var (
@@ -15,6 +18,133 @@ var (
     charset   string = "utf8"
 )
  
+
+
+type TableInfo struct {
+	ColumnName    string `json:"columnName"`
+	ColumnType    string `json:"columnType"`
+	MaxLength     string `json:"maxLength"`
+	ColumnComment string `json:"columnComment"`
+	NullAble      string `json:"nullAble"`
+}
+
+type TableInfos []TableInfo
+
+// db="test" 
+// select table_name tableName from information_schema.tables where table_schema='%s'"
+// table="user"
+// SELECT t.column_name ColumnName,t.data_type ColumnType,t.character_maximum_length MaxLength,t.column_comment columnComment,t.IS_NULLABLE NullAble FROM information_schema.COLUMNS t where t.TABLE_SCHEMA="test" and TABLE_NAME = "user";
+
+
+func Md(path string){
+	_, err := os.Stat(path)
+	if err == nil {
+		fmt.Println("exist")
+	}else{
+		err=os.MkdirAll(path,os.ModePerm)
+		if err!=nil{
+		   fmt.Println(err)
+		   return
+	    }
+		fmt.Println("created")
+	}
+}
+
+func today()(string){
+	now := time.Now()
+	n:=now.Format("2006-01-02")
+	return n
+}
+
+func write_table(file_name string,d TableInfos){
+	b, _ := json.MarshalIndent(d, "", "\t")
+	file,_:=os.Create(file_name)
+	defer file.Close()
+	_, err := file.Write(b)
+	if err!=nil{
+		fmt.Println("[saved] error")
+	}
+	fmt.Println("[saved]:",file_name)
+}
+
+
+
+
+
+func show_table(Db *sqlx.DB,db string,table string)(TableInfos ,error){
+	s2:=fmt.Sprintf(`SELECT t.column_name ColumnName,t.data_type ColumnType,t.character_maximum_length MaxLength,t.column_comment columnComment,t.IS_NULLABLE NullAble FROM information_schema.COLUMNS t where t.TABLE_SCHEMA="%s" and TABLE_NAME = "%s"`,db,table)
+	rows, err := Db.Query(s2)
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	//[]string{"属性名称", "类型", "最大长度", "允许为空", "备注"}
+	var (
+		ColumnName    string
+		ColumnType    string
+		MaxLength     string
+		ColumnComment string
+		NullAble      string
+	)
+	var tableInfos TableInfos 
+	for rows.Next() {
+		rows.Scan(&ColumnName, &ColumnType, &MaxLength, &ColumnComment, &NullAble)
+		tableInfos = append(tableInfos, TableInfo{ColumnName: ColumnName, MaxLength: MaxLength, ColumnType: ColumnType, ColumnComment: ColumnComment, NullAble: NullAble})
+	}
+	return tableInfos, nil
+}
+
+func show_db(Db *sqlx.DB) (error){
+	query1:=func (s string) (error,[]string){
+		rows, err := Db.Query(s)
+		defer rows.Close()
+        var d []string
+		if err != nil {
+			return err,d
+		}
+		for rows.Next() {
+			var d1 string
+			rows.Scan(&d1)
+			d=append(d,d1)
+		}
+		return err,d
+	}
+
+	s0:=`select distinct table_schema from information_schema.tables where table_type="BASE TABLE";`
+    _,dbs:=query1(s0)
+	fmt.Println(dbs)
+    exclude:=map[string]string{"mysql" : "","performance_schema":""} //忽略mysql,performance_schema
+	for _,db:=range(dbs) {
+		_,ok :=exclude[db]
+		if ok {
+			continue
+		}
+		s1:=fmt.Sprintf(`select table_name tableName from information_schema.tables where table_schema='%s'`,db)
+		_,tables:=query1(s1)
+		fmt.Println(tables)
+
+		file_path:=fmt.Sprintf(`/tmp/db/%s/%s`,today(),db)
+		Md(file_path)
+
+		for _,table:=range(tables) {
+			tableInfos, err := show_table(Db,db,table)
+			file_name:=fmt.Sprintf(`%s/%s.json`,file_path,table)
+			write_table(file_name,tableInfos)
+			if err != nil {
+				fmt.Print("query tableInfo error,", err)
+				continue
+			}
+			fmt.Println(db,table,tableInfos)
+		}
+
+
+	} 
+	return nil
+}
+
+
+
+
 /*
 go get "github.com/go-sql-driver/mysql"
 go get "github.com/jmoiron/sqlx"
@@ -156,7 +286,7 @@ func main(){
     defer Db.Close()
 
 
-
+/*
 	ping(Db)
 	queryData(Db)
 	deleteRecord(Db)
@@ -165,5 +295,6 @@ func main(){
 	queryData(Db)
 	find(Db)
 	findMany(Db)
-
+*/
+	show_db(Db)
 }
