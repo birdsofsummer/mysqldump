@@ -62,6 +62,27 @@ func write_table(file_name string,d TableInfos){
 	fmt.Println("[saved]:",file_name)
 }
 
+//"SELECT `table_name`,`table_comment` FROM `information_schema`.`tables` WHERE `table_schema`=?"
+//       MariaDB [test]> SELECT `table_name`,`table_comment` FROM `information_schema`.`tables` WHERE `table_schema`="test";
+//       +------------+---------------+
+//       | table_name | table_comment |
+//       +------------+---------------+
+//       | history    |               |
+//       | job        |               |
+//       | user       |               |
+//       +------------+---------------+
+//       3 rows in set (0.01 sec)
+//SELECT `ORDINAL_POSITION`,`COLUMN_NAME`,`COLUMN_TYPE`,`COLUMN_KEY`,`IS_NULLABLE`,`EXTRA`,`COLUMN_COMMENT`,`COLUMN_DEFAULT` FROM `information_schema`.`columns` WHERE `table_schema`=? AND `table_name`=? ORDER BY `ORDINAL_POSITION` ASC
+
+// MariaDB [test]> SELECT `ORDINAL_POSITION`,`COLUMN_NAME`,`COLUMN_TYPE`,`COLUMN_KEY`,`IS_NULLABLE`,`EXTRA`,`COLUMN_COMMENT`,`COLUMN_DEFAULT` FROM `information_schema`.`columns` WHERE `table_schema`="test" AND `table_name`="user" ORDER BY `ORDINAL_POSITION` ASC;
+//       序号 | 名称 | 描述 | 类型 | 键 | 为空 | 额外 | 默认值
+//       +------------------+-------------+-------------+------------+-------------+----------------+----------------+----------------+
+//       | ORDINAL_POSITION | COLUMN_NAME | COLUMN_TYPE | COLUMN_KEY | IS_NULLABLE | EXTRA          | COLUMN_COMMENT | COLUMN_DEFAULT |
+//       +------------------+-------------+-------------+------------+-------------+----------------+----------------+----------------+
+//       |                1 | id          | int(10)     | PRI        | NO          | auto_increment | Id             | NULL           |
+//       |                2 | name        | varchar(25) | UNI        | NO          |                | NickName       | NULL           |
+//       +------------------+-------------+-------------+------------+-------------+----------------+----------------+----------------+
+
 
 // db="test" 
 // select table_name tableName from information_schema.tables where table_schema='%s'"
@@ -116,6 +137,10 @@ func show_db(Db *sqlx.DB) (error){
 		if ok {
 			continue
 		}
+
+
+
+
 		s1:=fmt.Sprintf(`select table_name tableName from information_schema.tables where table_schema='%s'`,db)
 		_,tables:=query1(s1)
 		fmt.Println(tables)
