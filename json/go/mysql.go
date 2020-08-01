@@ -215,20 +215,20 @@ func show_db(Db *sqlx.DB) (error){
 		Md(file_path)
 
 		for _,table:=range(tables) {
-			tableInfos, err := show_table(Db,db,table)
+
 			file_name:=fmt.Sprintf(`%s/%s.json`,file_path,table)
-			write_table(file_name,tableInfos)
+			file_name1:=fmt.Sprintf(`%s/%s-data.json`,file_path,table)
+
+			tableInfos, err := show_table(Db,db,table)
 			if err != nil {
 				fmt.Print("query tableInfo error,", err)
 				continue
 			}
-			
 			//fmt.Println(db,table,tableInfos)
+			write_table(file_name,tableInfos)
 			fmt.Println(db,table,file_name)
 
 			ss:=fmt.Sprintf("select * from %s",table)
-
-			file_name1:=fmt.Sprintf(`%s/%s-data.json`,file_path,table)
 			_,d:=queryn(Db,ss)
 			write_map(file_name1,d)
 		}
