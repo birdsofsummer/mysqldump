@@ -131,11 +131,13 @@ func show_db(Db *sqlx.DB) (error){
 				fmt.Print("query tableInfo error,", err)
 				continue
 			}
-			fmt.Println(db,table,tableInfos)
+			
+			//fmt.Println(db,table,tableInfos)
+			fmt.Println(db,table,file_name)
 		}
+	}
 
-
-	} 
+	fmt.Println(dbs,"done")
 	return nil
 }
 
