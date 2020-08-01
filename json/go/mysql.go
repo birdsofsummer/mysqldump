@@ -129,7 +129,7 @@ func show_table(Db *sqlx.DB,db string,table string)(TableInfos ,error){
 	return tableInfos, nil
 }
 
-
+// 查询一个字符串字段
 func query1(Db *sqlx.DB,s string) (error,[]string){
 	rows, err := Db.Query(s)
 	defer rows.Close()
@@ -146,7 +146,7 @@ func query1(Db *sqlx.DB,s string) (error,[]string){
 }
 
 
-
+// 糊一个泛型。。
 func queryn(Db *sqlx.DB,s string) (error,[]map[string]interface{}){
 
 	var d []map[string]interface{}
@@ -201,7 +201,12 @@ func show_db(Db *sqlx.DB) (error){
 	s0:=`select distinct table_schema from information_schema.tables where table_type="BASE TABLE";`
     _,dbs:=query1(Db,s0)
 	fmt.Println(dbs)
-    exclude:=map[string]string{"mysql" : "","performance_schema":""} //忽略mysql,performance_schema
+
+	//忽略mysql,performance_schema这两张表
+    exclude:=map[string]string{
+		"mysql" : "",
+		"performance_schema":"",
+	} 
 	for _,db:=range(dbs) {
 		_,ok :=exclude[db]
 		if ok {
