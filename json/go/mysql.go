@@ -9,16 +9,16 @@ import (
 	"os"
 )
 
-var (
-    userName  string = "root"
-    password  string = "123456"
-    ipAddrees string = "127.0.0.1"
-    port      int    = 3306
-    dbName    string = "test"
-    charset   string = "utf8"
-)
- 
 
+
+type DbConfig struct {
+    UserName  string 
+    Password  string 
+    IpAddrees string 
+    Port      int    
+    DbName    string 
+    Charset   string 
+}
 
 type TableInfo struct {
 	ColumnName    string `json:"columnName"`
@@ -278,9 +278,14 @@ type User struct {
 	Name string `db:"name"`
 }
 
-
-func connectMysql() (*sqlx.DB) {
-    dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s", userName, password, ipAddrees, port, dbName, charset)
+func connectMysql(config DbConfig) (*sqlx.DB) {
+    dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s", 
+				config.UserName, 
+				config.Password, 
+				config.IpAddrees, 
+				config.Port, 
+				config.DbName, 
+				config.Charset)
     Db, err := sqlx.Open("mysql", dsn)
     if err != nil {
         fmt.Printf("mysql connect failed, detail is [%v]", err.Error())
@@ -375,15 +380,25 @@ func updateRecord(Db *sqlx.DB){
     fmt.Printf("update success, affected rows:[%d]\n", num)
 }
 
-func main(){
-    var Db *sqlx.DB = connectMysql()
+
+func test_show_db(){
+
+	config:= DbConfig {
+		UserName : "root",
+		Password : "123456",
+		IpAddrees: "127.0.0.1",
+		Port     : 3306,
+		DbName   : "test",
+		Charset  : "utf8",
+	}
+
+    var Db *sqlx.DB = connectMysql(config)
 	Db.SetMaxOpenConns(100)
 	//DB.SetConnMaxLifetime(d time.Duration)
     defer Db.Close()
 
-
-/*
 	ping(Db)
+/*
 	queryData(Db)
 	deleteRecord(Db)
 	addRecord(Db)
@@ -393,4 +408,10 @@ func main(){
 	findMany(Db)
 */
 	show_db(Db)
+
+}
+
+
+func main(){
+	test_show_db()
 }
