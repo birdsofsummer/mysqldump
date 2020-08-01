@@ -129,75 +129,77 @@ func show_table(Db *sqlx.DB,db string,table string)(TableInfos ,error){
 	return tableInfos, nil
 }
 
-func show_db(Db *sqlx.DB) (error){
 
-	query1:=func (s string) (error,[]string){
-		rows, err := Db.Query(s)
-		defer rows.Close()
-        var d []string
-		if err != nil {
-			return err,d
-		}
-		for rows.Next() {
-			var d1 string
-			rows.Scan(&d1)
-			d=append(d,d1)
-		}
+func query1(Db *sqlx.DB,s string) (error,[]string){
+	rows, err := Db.Query(s)
+	defer rows.Close()
+	var d []string
+	if err != nil {
+		return err,d
+	}
+	for rows.Next() {
+		var d1 string
+		rows.Scan(&d1)
+		d=append(d,d1)
+	}
+	return err,d
+}
+
+
+
+func queryn(Db *sqlx.DB,s string) (error,[]map[string]interface{}){
+
+	var d []map[string]interface{}
+
+	stmt, err := Db.Prepare(s) 
+	if err != nil {
+		fmt.Println("eee",err)
+		return err,d
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query()
+	if err != nil {
+		fmt.Println("eee",err)
 		return err,d
 	}
 
 
-	queryn:=func (s string) (error,[]map[string]interface{}){
+	columns, err := rows.Columns()
+	l:=len(columns)
 
-		var d []map[string]interface{}
-
-		stmt, err := Db.Prepare(s) 
-		if err != nil {
-			fmt.Println("eee",err)
-			return err,d
-		}
-		defer stmt.Close()
-		rows, err := stmt.Query()
-		if err != nil {
-			fmt.Println("eee",err)
-			return err,d
-		}
-
-
-		columns, err := rows.Columns()
-		l:=len(columns)
-
-		for _, name := range columns {
-			//m[name]
-			fmt.Println(name)
-		}
-
-		scanArgs:=make([]interface{}, l)
-		values := make([][]byte, l)
-
-
-		for i := range values {
-			scanArgs[i] = &values[i]
-		}
-
-		for rows.Next() {
-			rows.Scan(scanArgs...)
-			m:=make(map[string]interface{})
-			for k, v := range values {
-				k1:=columns[k]
-				v1:= string(v)
-				m[k1]=v1
-				//fmt.Println(m)
-			}
-			d=append(d,m)
-		}
-
-		//fmt.Println("ddd",d)
-		return nil,d
+	for _, name := range columns {
+		//m[name]
+		fmt.Println(name)
 	}
 
+	scanArgs:=make([]interface{}, l)
+	values := make([][]byte, l)
+
+
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+
+	for rows.Next() {
+		rows.Scan(scanArgs...)
+		m:=make(map[string]interface{})
+		for k, v := range values {
+			k1:=columns[k]
+			v1:= string(v)
+			m[k1]=v1
+			//fmt.Println(m)
+		}
+		d=append(d,m)
+	}
+
+	//fmt.Println("ddd",d)
+	return nil,d
+}
+
+
+func show_db(Db *sqlx.DB) (error){
 	s0:=`select distinct table_schema from information_schema.tables where table_type="BASE TABLE";`
-    _,dbs:=query1(s0)
+    _,dbs:=query1(Db,s0)
 	fmt.Println(dbs)
     exclude:=map[string]string{"mysql" : "","performance_schema":""} //忽略mysql,performance_schema
 	for _,db:=range(dbs) {
@@ -205,12 +207,8 @@ func show_db(Db *sqlx.DB) (error){
 		if ok {
 			continue
 		}
-
-
-
-
 		s1:=fmt.Sprintf(`select table_name tableName from information_schema.tables where table_schema='%s'`,db)
-		_,tables:=query1(s1)
+		_,tables:=query1(Db,s1)
 		fmt.Println(tables)
 
 		file_path:=fmt.Sprintf(`/tmp/db/%s/%s`,today(),db)
@@ -231,7 +229,7 @@ func show_db(Db *sqlx.DB) (error){
 			ss:=fmt.Sprintf("select * from %s",table)
 
 			file_name1:=fmt.Sprintf(`%s/%s-data.json`,file_path,table)
-			_,d:=queryn(ss)
+			_,d:=queryn(Db,ss)
 			write_map(file_name1,d)
 		}
 	}
