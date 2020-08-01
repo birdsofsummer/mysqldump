@@ -30,11 +30,6 @@ type TableInfo struct {
 
 type TableInfos []TableInfo
 
-// db="test" 
-// select table_name tableName from information_schema.tables where table_schema='%s'"
-// table="user"
-// SELECT t.column_name ColumnName,t.data_type ColumnType,t.character_maximum_length MaxLength,t.column_comment columnComment,t.IS_NULLABLE NullAble FROM information_schema.COLUMNS t where t.TABLE_SCHEMA="test" and TABLE_NAME = "user";
-
 
 func Md(path string){
 	_, err := os.Stat(path)
@@ -68,8 +63,10 @@ func write_table(file_name string,d TableInfos){
 }
 
 
-
-
+// db="test" 
+// select table_name tableName from information_schema.tables where table_schema='%s'"
+// table="user"
+// SELECT t.column_name ColumnName,t.data_type ColumnType,t.character_maximum_length MaxLength,t.column_comment columnComment,t.IS_NULLABLE NullAble FROM information_schema.COLUMNS t where t.TABLE_SCHEMA="test" and TABLE_NAME = "user";
 
 func show_table(Db *sqlx.DB,db string,table string)(TableInfos ,error){
 	s2:=fmt.Sprintf(`SELECT t.column_name ColumnName,t.data_type ColumnType,t.character_maximum_length MaxLength,t.column_comment columnComment,t.IS_NULLABLE NullAble FROM information_schema.COLUMNS t where t.TABLE_SCHEMA="%s" and TABLE_NAME = "%s"`,db,table)
